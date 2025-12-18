@@ -24,6 +24,10 @@ namespace MonacoEditorExample
         private Button btnGetCursor;
         private Button btnInsertText;
         private Button btnStreamDemo;
+        private Button btnGetRange;
+        private Button btnReplaceRange;
+        private Button btnDeleteRange;
+        private Button btnSelectRange;
         private TextBox txtLineNumber;
         private Label lblStatus;
 
@@ -45,7 +49,8 @@ namespace MonacoEditorExample
             {
                 Dock = DockStyle.Left,
                 Width = 200,
-                Padding = new Padding(10)
+                Padding = new Padding(10),
+                AutoScroll = true  // Enable scrolling for all buttons
             };
 
             // Status label at bottom
@@ -106,6 +111,22 @@ namespace MonacoEditorExample
             yPos += 50;
             btnStreamDemo = CreateButton("Stream Demo", yPos);
             btnStreamDemo.Click += BtnStreamDemo_Click;
+
+            yPos += 50;
+            btnGetRange = CreateButton("Get Range Text", yPos);
+            btnGetRange.Click += BtnGetRange_Click;
+
+            yPos += 40;
+            btnReplaceRange = CreateButton("Replace Range", yPos);
+            btnReplaceRange.Click += BtnReplaceRange_Click;
+
+            yPos += 40;
+            btnDeleteRange = CreateButton("Delete Range", yPos);
+            btnDeleteRange.Click += BtnDeleteRange_Click;
+
+            yPos += 40;
+            btnSelectRange = CreateButton("Select Range", yPos);
+            btnSelectRange.Click += BtnSelectRange_Click;
 
             // Add controls to form
             this.Controls.Add(webView);
@@ -372,6 +393,82 @@ namespace Example
             {
                 MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 btnStreamDemo.Enabled = true;
+            }
+        }
+
+        private async void BtnGetRange_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Get text from range (lines 5-7, columns 1-20)
+                string rangeText = await editorService.GetTextInRangeAsync(5, 1, 7, 20);
+                MessageBox.Show($"Text in range (5:1 to 7:20):\n\n{rangeText}",
+                    "Range Text", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // Highlight the range for visual feedback
+                await editorService.SelectRangeAsync(5, 1, 7, 20);
+                lblStatus.Text = "Retrieved text from range (5:1 to 7:20)";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void BtnReplaceRange_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Replace text in range (lines 2-3, columns 1-50) with new text
+                string newText = "// This text was replaced using ReplaceRangeAsync!\n// Range operations are powerful!";
+                await editorService.ReplaceRangeAsync(2, 1, 3, 50, newText);
+
+                // Highlight the new text
+                await editorService.HighlightLineRangeAsync(2, 3);
+                lblStatus.Text = "Replaced range (2:1 to 3:50) with new text";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void BtnDeleteRange_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Delete text in range (lines 8-10, columns 1-100)
+                var result = MessageBox.Show(
+                    "This will delete text in range (8:1 to 10:100). Continue?",
+                    "Confirm Delete",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning
+                );
+
+                if (result == DialogResult.Yes)
+                {
+                    await editorService.DeleteRangeAsync(8, 1, 10, 100);
+                    lblStatus.Text = "Deleted range (8:1 to 10:100)";
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void BtnSelectRange_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Select and highlight a range (lines 12-15, columns 5-30)
+                await editorService.SelectRangeAsync(12, 5, 15, 30);
+                await editorService.HighlightLineRangeAsync(12, 15);
+                lblStatus.Text = "Selected and highlighted range (12:5 to 15:30)";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
