@@ -8,7 +8,7 @@ using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace AnthropicApp.DynamicIDE
+namespace MonacoEditorService
 {
     /// <summary>
     /// Provides a C# wrapper for integrating Monaco Editor (VS Code's editor) into Windows Forms applications using WebView2.
