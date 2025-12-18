@@ -383,16 +383,16 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             string script = @"
         try {
             const position = editor.getPosition();
-            #if DEBUG
-            console.log('GetPosition: line ' + position.lineNumber + ', column ' + position.column);
-            #endif
-            JSON.stringify(position);
+            position;
         } catch (e) {
-            JSON.stringify({ error: 'GetPosition failed: ' + e.message });
+            ({ error: 'GetPosition failed: ' + e.message });
         }";
             string json = await _webView.CoreWebView2.ExecuteScriptAsync(script);
+
+            // ExecuteScriptAsync returns JSON-encoded result, so deserialize it
             var result = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)
                 ?? throw new JsonException("Failed to deserialize position JSON");
+
             if (result.TryGetValue("error", out var error))
             {
                 throw new Exception(error.GetString());
