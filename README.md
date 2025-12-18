@@ -60,7 +60,7 @@ YourApp/
 ### Basic Setup
 
 ```csharp
-using AnthropicApp.DynamicIDE;
+using MonacoEditorService;
 using Microsoft.Web.WebView2.WinForms;
 
 public class MyForm : Form

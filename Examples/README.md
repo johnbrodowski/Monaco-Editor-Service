@@ -100,6 +100,8 @@ By studying this example, you'll understand how to:
 ### 1. Initialize the Editor
 
 ```csharp
+using MonacoEditorService;
+
 editorService = new MonacoEditorService(webView);
 await editorService.InitializeAsync(
     appDirectory,
