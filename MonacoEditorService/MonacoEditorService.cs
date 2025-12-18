@@ -95,43 +95,79 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
         .line-highlight { background-color: #404080; display: block; } /* For HighlightLineRange */
         .search-highlight { background-color: #885500; } /* For Search results */
         .bookmark-gutter-icon { background: #2680F3; width: 5px !important; margin-left: 5px; }
+        #error-message { color: red; padding: 20px; font-family: Arial; }
     </style>
 </head>
 <body>
-    <h2>Monaco Editor Sync Loading Sample</h2>
+    <h2>Monaco Editor</h2>
+    <div id=""error-message"" style=""display:none;""></div>
     <div id=""container"" style=""width: <WIDTH>px; height: <HEIGHT>px; border: 1px solid grey""></div>
 
-    <script>var require = { paths: { vs: 'monaco-editor/min/vs' } };</script>
-    <script src=""monaco-editor/min/vs/loader.js""></script>
+    <script>
+        var require = { paths: { vs: 'monaco-editor/min/vs' } };
+
+        // Timeout to detect if Monaco never loads
+        setTimeout(function() {
+            if (!window.monacoLoaded && window.chrome && window.chrome.webview) {
+                document.getElementById('error-message').style.display = 'block';
+                document.getElementById('error-message').innerHTML =
+                    '<strong>Error: Monaco Editor files not found!</strong><br>' +
+                    'Please ensure monaco-editor folder is in: ' + window.location.href.replace('editor.html', 'monaco-editor/');
+                window.chrome.webview.postMessage({
+                    type: 'editorError',
+                    error: 'Monaco Editor files not found. Check monaco-editor/min/vs/ folder exists in application directory.'
+                });
+            }
+        }, 3000);
+    </script>
+    <script src=""monaco-editor/min/vs/loader.js"" onerror=""document.getElementById('error-message').style.display='block'; document.getElementById('error-message').innerHTML='Failed to load Monaco loader.js'""></script>
     <script src=""monaco-editor/min/vs/editor/editor.main.js""></script>
     <script>
         var bookmarkIdsByLine = {}; // Tracks bookmark decoration IDs by line number
         var currentHighlightIds = []; // Tracks highlight decoration IDs
         var editor;
-        require(['vs/editor/editor.main'], function() {
-            editor = monaco.editor.create(document.getElementById('container'), {
-                value: `<CODE>`,
-                language: '<LANGUAGE>',
-                theme: 'vs-dark',
-                fontSize: 10,
-                automaticLayout: true,
-                glyphMargin: true // Required for bookmark icons
+
+        try {
+            require(['vs/editor/editor.main'], function() {
+                try {
+                    editor = monaco.editor.create(document.getElementById('container'), {
+                        value: `<CODE>`,
+                        language: '<LANGUAGE>',
+                        theme: 'vs-dark',
+                        fontSize: 10,
+                        automaticLayout: true,
+                        glyphMargin: true // Required for bookmark icons
+                    });
+
+                    window.streamToEditor = function(text) {
+                        const selection = editor.getSelection();
+                        const edit = { range: selection, text: text, forceMoveMarkers: true };
+                        editor.executeEdits('stream-source', [edit]);
+                    }
+
+                    editor.onDidChangeModelContent(() => {
+
+                    });
+
+                    window.monacoLoaded = true;
+                    if (window.chrome && window.chrome.webview) {
+                        window.chrome.webview.postMessage({ type: 'editorReady' });
+                    }
+                } catch (e) {
+                    document.getElementById('error-message').style.display = 'block';
+                    document.getElementById('error-message').innerHTML = 'Error creating editor: ' + e.message;
+                    if (window.chrome && window.chrome.webview) {
+                        window.chrome.webview.postMessage({ type: 'editorError', error: e.message });
+                    }
+                }
             });
-
-            window.streamToEditor = function(text) {
-                const selection = editor.getSelection();
-                const edit = { range: selection, text: text, forceMoveMarkers: true };
-                editor.executeEdits('stream-source', [edit]);
-            }
-
-            editor.onDidChangeModelContent(() => {
-
-            });
-
+        } catch (e) {
+            document.getElementById('error-message').style.display = 'block';
+            document.getElementById('error-message').innerHTML = 'Error loading Monaco: ' + e.message;
             if (window.chrome && window.chrome.webview) {
-                window.chrome.webview.postMessage({ type: 'editorReady' });
+                window.chrome.webview.postMessage({ type: 'editorError', error: e.message });
             }
-        });
+        }
     </script>
 </body>
 </html>";
@@ -172,9 +208,21 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
         private void OnWebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs args)
         {
             var message = JsonDocument.Parse(args.WebMessageAsJson).RootElement;
-            if (message.TryGetProperty("type", out var type) && type.GetString() == "editorReady")
+            if (message.TryGetProperty("type", out var type))
             {
-                _editorReadyCompletionSource.TrySetResult(true);
+                var typeString = type.GetString();
+                if (typeString == "editorReady")
+                {
+                    _editorReadyCompletionSource.TrySetResult(true);
+                }
+                else if (typeString == "editorError")
+                {
+                    if (message.TryGetProperty("error", out var error))
+                    {
+                        var errorMessage = error.GetString();
+                        _editorReadyCompletionSource.TrySetException(new Exception($"Monaco Editor failed to load: {errorMessage}"));
+                    }
+                }
             }
         }
 
