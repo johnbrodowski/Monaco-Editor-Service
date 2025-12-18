@@ -199,14 +199,20 @@ namespace Example
                 // Wait for editor to be ready
                 await editorService.EditorReady;
 
-                // Update UI
-                lblStatus.Text = "Editor ready! Try the buttons on the left.";
-                EnableButtons();
+                // Update UI on the UI thread
+                this.Invoke((MethodInvoker)delegate
+                {
+                    lblStatus.Text = "Editor ready! Try the buttons on the left.";
+                    EnableButtons();
+                });
             }
             catch (Exception ex)
             {
-                lblStatus.Text = $"Error: {ex.Message}";
-                MessageBox.Show($"Failed to initialize editor: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Invoke((MethodInvoker)delegate
+                {
+                    lblStatus.Text = $"Error: {ex.Message}";
+                    MessageBox.Show($"Failed to initialize editor: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                });
             }
         }
 
