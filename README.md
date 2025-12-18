@@ -1,3 +1,6 @@
+<img width="1366" height="730" alt="image" src="https://github.com/user-attachments/assets/5876482d-7a13-42ae-8d49-4b9a33633772" />
+
+
 # Monaco Editor Service
 
 A powerful C# wrapper for integrating the **Monaco Editor** (the code editor that powers Visual Studio Code) into Windows Forms applications using WebView2.
