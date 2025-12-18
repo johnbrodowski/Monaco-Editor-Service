@@ -10,6 +10,7 @@ A powerful C# wrapper for integrating the **Monaco Editor** (the code editor tha
 - **Syntax Highlighting** - Support for all Monaco Editor languages
 - **Text Manipulation** - Insert, replace, delete, and stream text
 - **Line Operations** - Get, replace, and manipulate individual lines or ranges
+- **Precise Range Operations** - Get, insert, delete, replace, and select text at exact character positions
 - **Visual Decorations** - Highlight lines and add bookmarks
 - **Cursor Management** - Set position and get current location
 - **Streaming Support** - Stream text chunks for real-time updates (perfect for AI code generation)
@@ -138,6 +139,16 @@ public class MyForm : Form
 | `InsertTextAsync(lineNumber, column, text)` | Insert text at a specific position |
 | `GetSelectedTextAsync()` | Get currently selected text |
 
+### Precise Range Operations
+
+| Method | Description |
+|--------|-------------|
+| `GetTextInRangeAsync(startLine, startColumn, endLine, endColumn)` | Get text from a specific character range |
+| `InsertTextAtRangeAsync(startLine, startColumn, endLine, endColumn, text)` | Insert text at a specific range, replacing any text in that range |
+| `DeleteRangeAsync(startLine, startColumn, endLine, endColumn)` | Delete text in a specific character range |
+| `ReplaceRangeAsync(startLine, startColumn, endLine, endColumn, newText)` | Replace text in a specific character range with new text |
+| `SelectRangeAsync(startLine, startColumn, endLine, endColumn)` | Select and highlight a specific character range |
+
 ### Cursor and Position
 
 | Method | Description |
@@ -240,6 +251,28 @@ await editorService.ReplaceLineAsync(15, "// This line was replaced");
 
 // Delete lines
 await editorService.DeleteLineRangeAsync(20, 25);
+```
+
+### Example 6: Precise Range Operations
+
+Work with exact character positions for fine-grained control:
+
+```csharp
+// Get text from a specific character range (line 5 col 1 to line 7 col 30)
+string rangeText = await editorService.GetTextInRangeAsync(5, 1, 7, 30);
+Console.WriteLine($"Range text: {rangeText}");
+
+// Replace text in a precise range
+await editorService.ReplaceRangeAsync(10, 5, 10, 25, "new code here");
+
+// Delete a specific range
+await editorService.DeleteRangeAsync(15, 10, 15, 50);
+
+// Select and highlight a range
+await editorService.SelectRangeAsync(20, 1, 25, 40);
+
+// Insert text at a range (replaces existing text in range)
+await editorService.InsertTextAtRangeAsync(30, 1, 30, 1, "// Inserted text\n");
 ```
 
 ## Supported Languages

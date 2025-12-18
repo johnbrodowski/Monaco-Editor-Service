@@ -592,6 +592,119 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             await _webView.CoreWebView2.ExecuteScriptAsync(script);
         }
 
+        #endregion
+
+        #region Precise Range Operations
+
+        /// <summary>
+        /// Gets text from a specific range in the editor.
+        /// </summary>
+        /// <param name="startLine">The starting line number (1-based).</param>
+        /// <param name="startColumn">The starting column (1-based).</param>
+        /// <param name="endLine">The ending line number (1-based).</param>
+        /// <param name="endColumn">The ending column (1-based).</param>
+        /// <returns>The text content within the specified range.</returns>
+        public async Task<string?> GetTextInRangeAsync(int startLine, int startColumn, int endLine, int endColumn)
+        {
+            await _editorReadyCompletionSource.Task;
+            var json = await _webView.CoreWebView2.ExecuteScriptAsync($@"
+                try {{
+                    const range = new monaco.Range({startLine}, {startColumn}, {endLine}, {endColumn});
+                    const text = editor.getModel().getValueInRange(range);
+                    text;
+                }} catch (e) {{
+                    null;
+                }}
+            ");
+            return JsonSerializer.Deserialize<string>(json);
+        }
+
+        /// <summary>
+        /// Inserts text at a specific range, replacing any text in that range.
+        /// </summary>
+        /// <param name="startLine">The starting line number (1-based).</param>
+        /// <param name="startColumn">The starting column (1-based).</param>
+        /// <param name="endLine">The ending line number (1-based).</param>
+        /// <param name="endColumn">The ending column (1-based).</param>
+        /// <param name="text">The text to insert.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task InsertTextAtRangeAsync(int startLine, int startColumn, int endLine, int endColumn, string text)
+        {
+            await _editorReadyCompletionSource.Task;
+            var script = $@"
+                editor.executeEdits('api', [{{
+                    range: new monaco.Range({startLine}, {startColumn}, {endLine}, {endColumn}),
+                    text: {JsonSerializer.Serialize(text)}
+                }}]);
+            ";
+            await _webView.CoreWebView2.ExecuteScriptAsync(script);
+        }
+
+        /// <summary>
+        /// Deletes text in a specific range.
+        /// </summary>
+        /// <param name="startLine">The starting line number (1-based).</param>
+        /// <param name="startColumn">The starting column (1-based).</param>
+        /// <param name="endLine">The ending line number (1-based).</param>
+        /// <param name="endColumn">The ending column (1-based).</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task DeleteRangeAsync(int startLine, int startColumn, int endLine, int endColumn)
+        {
+            await _editorReadyCompletionSource.Task;
+            var script = $@"
+                editor.executeEdits('api', [{{
+                    range: new monaco.Range({startLine}, {startColumn}, {endLine}, {endColumn}),
+                    text: ''
+                }}]);
+            ";
+            await _webView.CoreWebView2.ExecuteScriptAsync(script);
+        }
+
+        /// <summary>
+        /// Replaces text in a specific range with new text.
+        /// </summary>
+        /// <param name="startLine">The starting line number (1-based).</param>
+        /// <param name="startColumn">The starting column (1-based).</param>
+        /// <param name="endLine">The ending line number (1-based).</param>
+        /// <param name="endColumn">The ending column (1-based).</param>
+        /// <param name="newText">The new text to replace the range with.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task ReplaceRangeAsync(int startLine, int startColumn, int endLine, int endColumn, string newText)
+        {
+            await _editorReadyCompletionSource.Task;
+            var script = $@"
+                editor.executeEdits('api', [{{
+                    range: new monaco.Range({startLine}, {startColumn}, {endLine}, {endColumn}),
+                    text: {JsonSerializer.Serialize(newText)},
+                    forceMoveMarkers: true
+                }}]);
+            ";
+            await _webView.CoreWebView2.ExecuteScriptAsync(script);
+        }
+
+        /// <summary>
+        /// Selects a specific range in the editor.
+        /// </summary>
+        /// <param name="startLine">The starting line number (1-based).</param>
+        /// <param name="startColumn">The starting column (1-based).</param>
+        /// <param name="endLine">The ending line number (1-based).</param>
+        /// <param name="endColumn">The ending column (1-based).</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task SelectRangeAsync(int startLine, int startColumn, int endLine, int endColumn)
+        {
+            await _editorReadyCompletionSource.Task;
+            await _webView.CoreWebView2.ExecuteScriptAsync($@"
+                const range = new monaco.Range({startLine}, {startColumn}, {endLine}, {endColumn});
+                editor.setSelection(range);
+                editor.revealRangeInCenter(range);
+                editor.focus();
+            ");
+        }
+
+        #endregion
+
+        #region Cursor Position
+
         /// <summary>
         /// Sets the cursor position in the editor and gives it focus.
         /// </summary>
