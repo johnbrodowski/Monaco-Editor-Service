@@ -145,7 +145,7 @@ await editorService.ToggleBookmarkAsync(lineNumber);
 
 ```csharp
 // Get current position
-var (line, column) = await editorService.GetPositionAsync();
+(int line, int column) = await editorService.GetPositionAsync();
 
 // Insert at cursor
 await editorService.InsertTextAsync(line, column, "// Your text here\n");

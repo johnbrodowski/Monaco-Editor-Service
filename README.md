@@ -215,7 +215,7 @@ await editorService.EndStreamAsync();
 
 ```csharp
 // Get current cursor position
-var (line, column) = await editorService.GetPositionAsync();
+(int line, int column) = await editorService.GetPositionAsync();
 Console.WriteLine($"Cursor at Line {line}, Column {column}");
 
 // Get selected text
