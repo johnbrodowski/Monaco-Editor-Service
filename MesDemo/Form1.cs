@@ -1,6 +1,6 @@
 using Microsoft.Web.WebView2.WinForms;
 
-using MonacoEditorService;
+using MonacoEditor;
 
 namespace MesDemo
 {
