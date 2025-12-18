@@ -55,6 +55,8 @@ YourApp/
 
 ## Quick Start
 
+> **💡 Want a complete working example?** Check out [Examples/BasicEditorForm.cs](Examples/BasicEditorForm.cs) for a full Windows Forms application demonstrating all features!
+
 ### Basic Setup
 
 ```csharp
@@ -279,6 +281,21 @@ protected override void OnFormClosing(FormClosingEventArgs e)
     base.OnFormClosing(e);
 }
 ```
+
+## Examples
+
+The [Examples](Examples/) directory contains complete, working examples:
+
+- **[BasicEditorForm.cs](Examples/BasicEditorForm.cs)** - A full Windows Forms application demonstrating:
+  - Editor initialization with syntax highlighting
+  - File load/save operations
+  - Line highlighting and navigation
+  - Bookmark management
+  - Cursor position handling
+  - Text insertion
+  - Real-time streaming (perfect for AI code generation)
+
+Each example includes detailed comments and demonstrates best practices. Check the [Examples README](Examples/README.md) for setup instructions.
 
 ## Contributing
 
