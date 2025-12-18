@@ -10,12 +10,18 @@ using System.Threading.Tasks;
 
 namespace AnthropicApp.DynamicIDE
 {
-
-
+    /// <summary>
+    /// Provides a C# wrapper for integrating Monaco Editor (VS Code's editor) into Windows Forms applications using WebView2.
+    /// Supports file operations, text manipulation, syntax highlighting, decorations, and real-time streaming.
+    /// </summary>
     public sealed class MonacoEditorService : IDisposable
     {
         private readonly WebView2 _webView;
         private readonly TaskCompletionSource<bool> _editorReadyCompletionSource = new TaskCompletionSource<bool>();
+
+        /// <summary>
+        /// Gets a task that completes when the Monaco Editor is fully initialized and ready to use.
+        /// </summary>
         public Task EditorReady => _editorReadyCompletionSource.Task;
 
 
@@ -134,8 +140,21 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
 
         #endregion
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MonacoEditorService"/> class.
+        /// </summary>
+        /// <param name="webView">The WebView2 control that will host the Monaco Editor.</param>
         public MonacoEditorService(WebView2 webView) { _webView = webView; }
 
+        /// <summary>
+        /// Initializes the Monaco Editor with the specified configuration.
+        /// </summary>
+        /// <param name="appDirectory">The application directory where editor.html will be created and monaco-editor files should be located.</param>
+        /// <param name="initialCode">The initial code content to display in the editor.</param>
+        /// <param name="language">The programming language for syntax highlighting (e.g., "csharp", "javascript", "python").</param>
+        /// <param name="width">The width of the editor in pixels. Default is 800.</param>
+        /// <param name="height">The height of the editor in pixels. Default is 600.</param>
+        /// <returns>A task representing the asynchronous initialization operation.</returns>
         public async Task InitializeAsync(string appDirectory, string initialCode, string language, int width = 800, int height = 600)
         {
             await _webView.EnsureCoreWebView2Async(null);
@@ -163,6 +182,11 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
 
         #region File I/O and Content
 
+        /// <summary>
+        /// Sets the entire content of the editor.
+        /// </summary>
+        /// <param name="value">The text content to set in the editor.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task SetValueAsync(string value)
         {
             await _editorReadyCompletionSource.Task;
@@ -183,6 +207,10 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
 
 
 
+        /// <summary>
+        /// Gets the current cursor position in the editor.
+        /// </summary>
+        /// <returns>A tuple containing the line number and column (both 1-based).</returns>
         public async Task<(int LineNumber, int Column)> GetPositionAsync()
         {
             await _editorReadyCompletionSource.Task;
@@ -213,6 +241,10 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
 
 
 
+        /// <summary>
+        /// Gets the currently selected text in the editor.
+        /// </summary>
+        /// <returns>The selected text, or null if no text is selected.</returns>
         public async Task<string?> GetSelectedTextAsync()
         {
             await _editorReadyCompletionSource.Task;
@@ -230,7 +262,10 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             return JsonSerializer.Deserialize<string>(json);
         }
 
-         
+        /// <summary>
+        /// Gets all text content from the editor.
+        /// </summary>
+        /// <returns>The complete text content of the editor.</returns>
         public async Task<string?> GetAllTextAsync()
         {
             await _editorReadyCompletionSource.Task;
@@ -238,8 +273,11 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             return JsonSerializer.Deserialize<string?>(json);
         }
 
- 
-
+        /// <summary>
+        /// Gets the text content of a specific line.
+        /// </summary>
+        /// <param name="lineNumber">The line number (1-based) to retrieve.</param>
+        /// <returns>The text content of the specified line.</returns>
         public async Task<string?> GetLineTextAsync(int lineNumber)
         {
             await _editorReadyCompletionSource.Task;
@@ -255,7 +293,13 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             ");
             return JsonSerializer.Deserialize<string>(json);
         }
- 
+
+        /// <summary>
+        /// Gets the text content from a range of lines.
+        /// </summary>
+        /// <param name="startLine">The starting line number (1-based, inclusive).</param>
+        /// <param name="endLine">The ending line number (1-based, inclusive).</param>
+        /// <returns>The text content from the specified line range.</returns>
         public async Task<string> GetLineRangeAsync(int startLine, int endLine)
         {
             await _editorReadyCompletionSource.Task;
@@ -280,19 +324,33 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             return result;
         }
 
-  
+
+        /// <summary>
+        /// Saves the current editor content to a file.
+        /// </summary>
+        /// <param name="filePath">The file path where the content should be saved.</param>
+        /// <returns>A task representing the asynchronous save operation.</returns>
         public async Task SaveToFileAsync(string filePath)
         {
             string content = await GetAllTextAsync() ?? string.Empty;
             await File.WriteAllTextAsync(filePath, content);
         }
 
+        /// <summary>
+        /// Loads content from a file into the editor.
+        /// </summary>
+        /// <param name="filePath">The file path to load content from.</param>
+        /// <returns>A task representing the asynchronous load operation.</returns>
         public async Task LoadFromFileAsync(string filePath)
         {
             string content = await File.ReadAllTextAsync(filePath) ?? string.Empty;
             await _webView.CoreWebView2.ExecuteScriptAsync($"editor.setValue({JsonSerializer.Serialize(content)});");
         }
 
+        /// <summary>
+        /// Gets the total number of lines in the editor.
+        /// </summary>
+        /// <returns>The line count.</returns>
         public async Task<int> CountLinesAsync()
         {
             await _editorReadyCompletionSource.Task;
@@ -302,6 +360,14 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
         #endregion
 
         #region Editing and Manipulation
+
+        /// <summary>
+        /// Inserts text at the specified position in the editor.
+        /// </summary>
+        /// <param name="lineNumber">The line number (1-based) where text should be inserted.</param>
+        /// <param name="column">The column position (1-based) where text should be inserted.</param>
+        /// <param name="text">The text to insert.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task InsertTextAsync(int lineNumber, int column, string text)
         {
             await _editorReadyCompletionSource.Task;
@@ -309,13 +375,26 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             await _webView.CoreWebView2.ExecuteScriptAsync(script);
         }
 
+        /// <summary>
+        /// Replaces the content of a specific line.
+        /// </summary>
+        /// <param name="lineNumber">The line number (1-based) to replace.</param>
+        /// <param name="newText">The new text content for the line.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task ReplaceLineAsync(int lineNumber, string newText)
         {
             await _editorReadyCompletionSource.Task;
             var script = $"const range = new monaco.Range({lineNumber}, 1, {lineNumber}, editor.getModel().getLineLength({lineNumber}) + 1); editor.executeEdits('api', [{{ range: range, text: {JsonSerializer.Serialize(newText)} }}]);";
             await _webView.CoreWebView2.ExecuteScriptAsync(script);
         }
- 
+
+        /// <summary>
+        /// Replaces a range of lines with new text.
+        /// </summary>
+        /// <param name="startLine">The starting line number (1-based, inclusive).</param>
+        /// <param name="endLine">The ending line number (1-based, inclusive).</param>
+        /// <param name="newText">The new text to replace the range with.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task ReplaceLineRangeAsync(int startLine, int endLine, string newText)
         {
             await _editorReadyCompletionSource.Task;
@@ -334,6 +413,12 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
         }
 
 
+        /// <summary>
+        /// Deletes a range of lines from the editor.
+        /// </summary>
+        /// <param name="startLine">The starting line number (1-based, inclusive).</param>
+        /// <param name="endLine">The ending line number (1-based, inclusive).</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task DeleteLineRangeAsync(int startLine, int endLine)
         {
             await _editorReadyCompletionSource.Task;
@@ -341,24 +426,45 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             await _webView.CoreWebView2.ExecuteScriptAsync(script);
         }
 
+        /// <summary>
+        /// Sets the cursor position in the editor and gives it focus.
+        /// </summary>
+        /// <param name="lineNumber">The line number (1-based) to position the cursor.</param>
+        /// <param name="column">The column position (1-based) to position the cursor.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task SetCursorPositionAsync(int lineNumber, int column)
         {
             await _editorReadyCompletionSource.Task;
             await _webView.CoreWebView2.ExecuteScriptAsync($"editor.setPosition({{ lineNumber: {lineNumber}, column: {column} }}); editor.focus();");
         }
 
+        /// <summary>
+        /// Begins a streaming session for adding text chunks to the editor.
+        /// Positions the cursor at the end of the document and prepares for streaming.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task BeginStreamAsync()
         {
             await _editorReadyCompletionSource.Task;
             await _webView.CoreWebView2.ExecuteScriptAsync("const model = editor.getModel(); editor.setPosition({ lineNumber: model.getLineCount(), column: model.getLineLength(model.getLineCount()) + 1 }); editor.focus(); editor.pushUndoStop();");
         }
 
+        /// <summary>
+        /// Streams a chunk of text to the editor at the current cursor position.
+        /// Use between BeginStreamAsync and EndStreamAsync calls.
+        /// </summary>
+        /// <param name="text">The text chunk to stream to the editor.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task StreamChunkAsync(string text)
         {
             if (string.IsNullOrEmpty(text) || !_editorReadyCompletionSource.Task.IsCompleted) return;
             await _webView.CoreWebView2.ExecuteScriptAsync($"window.streamToEditor({JsonSerializer.Serialize(text)})");
         }
 
+        /// <summary>
+        /// Ends a streaming session and finalizes the undo/redo state.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task EndStreamAsync()
         {
             await _editorReadyCompletionSource.Task;
@@ -368,7 +474,13 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
 
         #region Highlight and Bookmarks (Corrected)
 
-     
+        /// <summary>
+        /// Highlights a range of lines in the editor with a distinct background color.
+        /// Clears any existing highlights before applying the new one.
+        /// </summary>
+        /// <param name="startLine">The starting line number (1-based, inclusive).</param>
+        /// <param name="endLine">The ending line number (1-based, inclusive).</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task HighlightLineRangeAsync(int startLine, int endLine)
         {
             await _editorReadyCompletionSource.Task;
@@ -446,6 +558,12 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
 
 
 
+        /// <summary>
+        /// Toggles a bookmark decoration on the specified line.
+        /// If a bookmark exists on the line, it will be removed. If not, it will be added.
+        /// </summary>
+        /// <param name="lineNumber">The line number (1-based) to toggle the bookmark on.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task ToggleBookmarkAsync(int lineNumber)
         {
             await _editorReadyCompletionSource.Task;
@@ -475,8 +593,13 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             System.Diagnostics.Debug.WriteLine($"Bookmark operation on line {lineNumber}: {result}");
         }
 
- 
 
+
+        /// <summary>
+        /// Clears all line highlights from the editor.
+        /// Bookmarks are not affected.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task ClearHighlightAsync()
         {
             await _editorReadyCompletionSource.Task;
@@ -501,7 +624,10 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             System.Diagnostics.Debug.WriteLine($"ClearHighlightAsync: {result}");
         }
 
-
+        /// <summary>
+        /// Clears all decorations (highlights and bookmarks) from the editor.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task ClearAllDecorationsAsync()
         {
             await _editorReadyCompletionSource.Task;
@@ -530,9 +656,11 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
             System.Diagnostics.Debug.WriteLine($"ClearAllDecorationsAsync: {result}");
         }
 
- 
-
-
+        /// <summary>
+        /// Gets information about decorations on a specific line.
+        /// </summary>
+        /// <param name="lineNumber">The line number (1-based) to get decoration information for.</param>
+        /// <returns>A JSON string containing decoration information for the line.</returns>
         public async Task<string> GetDecorationInfoAsync(int lineNumber)
         {
             await _editorReadyCompletionSource.Task;
@@ -581,6 +709,9 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
  
         #endregion
 
+        /// <summary>
+        /// Disposes of the Monaco Editor Service and cleans up event handlers.
+        /// </summary>
         public void Dispose()
         {
             if (_webView?.CoreWebView2 != null)
