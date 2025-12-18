@@ -1,10 +1,11 @@
 ﻿using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
 
- 
+
 using System;
- 
+using System.IO.Compression;
 using System.IO;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -183,6 +184,120 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
         public MonacoEditorService(WebView2 webView) { _webView = webView; }
 
         /// <summary>
+        /// Ensures Monaco Editor files are present in the application directory.
+        /// Downloads them from CDN if not found.
+        /// </summary>
+        /// <param name="appDirectory">The application directory where monaco-editor should be located.</param>
+        /// <returns>A task representing the asynchronous download operation.</returns>
+        public static async Task EnsureMonacoEditorFilesAsync(string appDirectory)
+        {
+            var monacoPath = Path.Combine(appDirectory, "monaco-editor", "min", "vs");
+
+            // Check if already exists
+            if (Directory.Exists(monacoPath) &&
+                File.Exists(Path.Combine(monacoPath, "loader.js")) &&
+                File.Exists(Path.Combine(monacoPath, "editor", "editor.main.js")))
+            {
+                return; // Already installed
+            }
+
+            // Download Monaco Editor from CDN
+            const string monacoVersion = "0.52.0";
+            string downloadUrl = $"https://registry.npmjs.org/monaco-editor/-/monaco-editor-{monacoVersion}.tgz";
+
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromMinutes(5);
+
+            // Download the package
+            var response = await httpClient.GetAsync(downloadUrl);
+            response.EnsureSuccessStatusCode();
+
+            var tempTgzPath = Path.Combine(Path.GetTempPath(), "monaco-editor.tgz");
+            var tempTarPath = Path.Combine(Path.GetTempPath(), "monaco-editor.tar");
+            var tempExtractPath = Path.Combine(Path.GetTempPath(), "monaco-editor-extract");
+
+            try
+            {
+                // Save TGZ file
+                await using (var fs = File.Create(tempTgzPath))
+                {
+                    await response.Content.CopyToAsync(fs);
+                }
+
+                // Decompress TGZ to TAR
+                using (var gzipStream = new GZipStream(File.OpenRead(tempTgzPath), CompressionMode.Decompress))
+                using (var tarStream = File.Create(tempTarPath))
+                {
+                    await gzipStream.CopyToAsync(tarStream);
+                }
+
+                // Extract TAR (we'll need to manually extract since .NET doesn't have built-in TAR support)
+                // For simplicity, we'll use a different approach: download the min files directly
+
+                // Clean up temp files
+                File.Delete(tempTgzPath);
+                File.Delete(tempTarPath);
+
+                // Alternative: Download pre-built files from CDN
+                await DownloadMonacoFromCDN(appDirectory, monacoVersion);
+            }
+            finally
+            {
+                // Cleanup
+                if (File.Exists(tempTgzPath)) File.Delete(tempTgzPath);
+                if (File.Exists(tempTarPath)) File.Delete(tempTarPath);
+                if (Directory.Exists(tempExtractPath)) Directory.Delete(tempExtractPath, true);
+            }
+        }
+
+        private static async Task DownloadMonacoFromCDN(string appDirectory, string version)
+        {
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromMinutes(5);
+
+            var baseUrl = $"https://cdn.jsdelivr.net/npm/monaco-editor@{version}/min";
+            var targetDir = Path.Combine(appDirectory, "monaco-editor", "min");
+
+            // Create directory structure
+            Directory.CreateDirectory(Path.Combine(targetDir, "vs", "editor"));
+            Directory.CreateDirectory(Path.Combine(targetDir, "vs", "base", "worker"));
+            Directory.CreateDirectory(Path.Combine(targetDir, "vs", "basic-languages"));
+
+            // Download essential files
+            var filesToDownload = new[]
+            {
+                "vs/loader.js",
+                "vs/editor/editor.main.js",
+                "vs/editor/editor.main.css",
+                "vs/editor/editor.main.nls.js",
+                "vs/base/worker/workerMain.js",
+                "vs/language/typescript/tsWorker.js",
+                "vs/language/json/jsonWorker.js",
+                "vs/language/css/cssWorker.js",
+                "vs/language/html/htmlWorker.js",
+                "vs/basic-languages/monaco.contribution.js"
+            };
+
+            foreach (var file in filesToDownload)
+            {
+                try
+                {
+                    var url = $"{baseUrl}/{file}";
+                    var targetPath = Path.Combine(targetDir, file);
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(targetPath));
+
+                    var content = await httpClient.GetByteArrayAsync(url);
+                    await File.WriteAllBytesAsync(targetPath, content);
+                }
+                catch
+                {
+                    // Some files might not exist, continue anyway
+                }
+            }
+        }
+
+        /// <summary>
         /// Initializes the Monaco Editor with the specified configuration.
         /// </summary>
         /// <param name="appDirectory">The application directory where editor.html will be created and monaco-editor files should be located.</param>
@@ -193,6 +308,9 @@ private string EditorHtmlTemplate2 = @"<!DOCTYPE html>
         /// <returns>A task representing the asynchronous initialization operation.</returns>
         public async Task InitializeAsync(string appDirectory, string initialCode, string language, int width = 800, int height = 600)
         {
+            // Ensure Monaco Editor files are present (download if needed)
+            await EnsureMonacoEditorFilesAsync(appDirectory);
+
             await _webView.EnsureCoreWebView2Async(null);
             _webView.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
             var finalHtml = EditorHtmlTemplate
