@@ -15,7 +15,11 @@ namespace MonacoEditorExample
     {
         private WebView2 webView;
         private MonacoEditorService editorService;
-        private Panel buttonPanel;
+        private Panel sidePanel;
+        private GroupBox grpFileOps;
+        private GroupBox grpDecorations;
+        private GroupBox grpTextOps;
+        private GroupBox grpRangeOps;
         private Button btnLoadFile;
         private Button btnSaveFile;
         private Button btnHighlightLines;
@@ -29,7 +33,9 @@ namespace MonacoEditorExample
         private Button btnDeleteRange;
         private Button btnSelectRange;
         private TextBox txtLineNumber;
-        private Label lblStatus;
+        private StatusStrip statusStrip;
+        private ToolStripStatusLabel lblStatus;
+        private ToolStripStatusLabel lblEditorInfo;
 
         public BasicEditorForm()
         {
@@ -40,28 +46,45 @@ namespace MonacoEditorExample
         private void InitializeComponents()
         {
             // Form setup
-            this.Text = "Monaco Editor Service - Example";
-            this.Size = new System.Drawing.Size(1200, 800);
+            this.Text = "Monaco Editor Service - Feature Showcase";
+            this.Size = new System.Drawing.Size(1400, 850);
             this.StartPosition = FormStartPosition.CenterScreen;
+            this.BackColor = System.Drawing.Color.FromArgb(240, 240, 240);
 
-            // Button panel on the left
-            buttonPanel = new Panel
+            // Side panel with modern styling
+            sidePanel = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 200,
+                Width = 280,
+                BackColor = System.Drawing.Color.FromArgb(45, 45, 48),
                 Padding = new Padding(10),
-                AutoScroll = true  // Enable scrolling for all buttons
+                AutoScroll = true
             };
 
-            // Status label at bottom
-            lblStatus = new Label
+            // Modern status strip
+            statusStrip = new StatusStrip
             {
-                Dock = DockStyle.Bottom,
-                Height = 30,
-                Text = "Initializing editor...",
-                Padding = new Padding(10, 5, 10, 5),
-                BackColor = System.Drawing.Color.LightGray
+                BackColor = System.Drawing.Color.FromArgb(0, 122, 204),
+                ForeColor = System.Drawing.Color.White
             };
+
+            lblStatus = new ToolStripStatusLabel
+            {
+                Text = "Initializing Monaco Editor...",
+                Spring = true,
+                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                ForeColor = System.Drawing.Color.White
+            };
+
+            lblEditorInfo = new ToolStripStatusLabel
+            {
+                Text = "Line: - | Col: -",
+                ForeColor = System.Drawing.Color.White,
+                BorderSides = ToolStripStatusLabelBorderSides.Left
+            };
+
+            statusStrip.Items.Add(lblStatus);
+            statusStrip.Items.Add(lblEditorInfo);
 
             // WebView2 control
             webView = new WebView2
@@ -69,103 +92,189 @@ namespace MonacoEditorExample
                 Dock = DockStyle.Fill
             };
 
-            // Create buttons
-            int yPos = 10;
-            btnLoadFile = CreateButton("Load File", yPos);
-            btnLoadFile.Click += BtnLoadFile_Click;
-
-            yPos += 40;
-            btnSaveFile = CreateButton("Save File", yPos);
-            btnSaveFile.Click += BtnSaveFile_Click;
-
-            yPos += 50;
-            txtLineNumber = new TextBox
-            {
-                Left = 10,
-                Top = yPos,
-                Width = 180,
-                PlaceholderText = "Line number..."
-            };
-            buttonPanel.Controls.Add(txtLineNumber);
-
-            yPos += 35;
-            btnHighlightLines = CreateButton("Highlight Lines 5-10", yPos);
-            btnHighlightLines.Click += BtnHighlightLines_Click;
-
-            yPos += 40;
-            btnClearHighlight = CreateButton("Clear Highlight", yPos);
-            btnClearHighlight.Click += BtnClearHighlight_Click;
-
-            yPos += 40;
-            btnToggleBookmark = CreateButton("Toggle Bookmark", yPos);
-            btnToggleBookmark.Click += BtnToggleBookmark_Click;
-
-            yPos += 50;
-            btnGetCursor = CreateButton("Get Cursor Position", yPos);
-            btnGetCursor.Click += BtnGetCursor_Click;
-
-            yPos += 40;
-            btnInsertText = CreateButton("Insert Comment", yPos);
-            btnInsertText.Click += BtnInsertText_Click;
-
-            yPos += 50;
-            btnStreamDemo = CreateButton("Stream Demo", yPos);
-            btnStreamDemo.Click += BtnStreamDemo_Click;
-
-            yPos += 50;
-            btnGetRange = CreateButton("Get Range Text", yPos);
-            btnGetRange.Click += BtnGetRange_Click;
-
-            yPos += 40;
-            btnReplaceRange = CreateButton("Replace Range", yPos);
-            btnReplaceRange.Click += BtnReplaceRange_Click;
-
-            yPos += 40;
-            btnDeleteRange = CreateButton("Delete Range", yPos);
-            btnDeleteRange.Click += BtnDeleteRange_Click;
-
-            yPos += 40;
-            btnSelectRange = CreateButton("Select Range", yPos);
-            btnSelectRange.Click += BtnSelectRange_Click;
+            // Create grouped controls
+            CreateFileOperationsGroup();
+            CreateDecorationsGroup();
+            CreateTextOperationsGroup();
+            CreateRangeOperationsGroup();
 
             // Add controls to form
             this.Controls.Add(webView);
-            this.Controls.Add(buttonPanel);
-            this.Controls.Add(lblStatus);
+            this.Controls.Add(sidePanel);
+            this.Controls.Add(statusStrip);
 
             // Disable buttons until editor is ready
             DisableButtons();
         }
 
-        private Button CreateButton(string text, int yPosition)
+        private void CreateFileOperationsGroup()
+        {
+            grpFileOps = new GroupBox
+            {
+                Text = "📁 File Operations",
+                ForeColor = System.Drawing.Color.White,
+                Location = new System.Drawing.Point(10, 10),
+                Size = new System.Drawing.Size(260, 100),
+                FlatStyle = FlatStyle.Flat
+            };
+
+            btnLoadFile = CreateStyledButton("📂 Load File", 25);
+            btnLoadFile.Click += BtnLoadFile_Click;
+
+            btnSaveFile = CreateStyledButton("💾 Save File", 60);
+            btnSaveFile.Click += BtnSaveFile_Click;
+
+            grpFileOps.Controls.Add(btnLoadFile);
+            grpFileOps.Controls.Add(btnSaveFile);
+            sidePanel.Controls.Add(grpFileOps);
+        }
+
+        private void CreateDecorationsGroup()
+        {
+            grpDecorations = new GroupBox
+            {
+                Text = "🎨 Visual Decorations",
+                ForeColor = System.Drawing.Color.White,
+                Location = new System.Drawing.Point(10, 120),
+                Size = new System.Drawing.Size(260, 190),
+                FlatStyle = FlatStyle.Flat
+            };
+
+            txtLineNumber = new TextBox
+            {
+                Left = 10,
+                Top = 25,
+                Width = 240,
+                Height = 25,
+                PlaceholderText = "Line number for bookmark...",
+                BackColor = System.Drawing.Color.FromArgb(60, 60, 65),
+                ForeColor = System.Drawing.Color.White,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+
+            btnHighlightLines = CreateStyledButton("✨ Highlight Lines 5-10", 60);
+            btnHighlightLines.Click += BtnHighlightLines_Click;
+
+            btnClearHighlight = CreateStyledButton("🧹 Clear Highlight", 95);
+            btnClearHighlight.Click += BtnClearHighlight_Click;
+
+            btnToggleBookmark = CreateStyledButton("🔖 Toggle Bookmark", 130);
+            btnToggleBookmark.Click += BtnToggleBookmark_Click;
+
+            grpDecorations.Controls.Add(txtLineNumber);
+            grpDecorations.Controls.Add(btnHighlightLines);
+            grpDecorations.Controls.Add(btnClearHighlight);
+            grpDecorations.Controls.Add(btnToggleBookmark);
+            sidePanel.Controls.Add(grpDecorations);
+        }
+
+        private void CreateTextOperationsGroup()
+        {
+            grpTextOps = new GroupBox
+            {
+                Text = "✏️ Text Operations",
+                ForeColor = System.Drawing.Color.White,
+                Location = new System.Drawing.Point(10, 320),
+                Size = new System.Drawing.Size(260, 155),
+                FlatStyle = FlatStyle.Flat
+            };
+
+            btnGetCursor = CreateStyledButton("📍 Get Cursor Position", 25);
+            btnGetCursor.Click += BtnGetCursor_Click;
+
+            btnInsertText = CreateStyledButton("💬 Insert Comment", 60);
+            btnInsertText.Click += BtnInsertText_Click;
+
+            btnStreamDemo = CreateStyledButton("⚡ Stream Demo", 95);
+            btnStreamDemo.Click += BtnStreamDemo_Click;
+
+            grpTextOps.Controls.Add(btnGetCursor);
+            grpTextOps.Controls.Add(btnInsertText);
+            grpTextOps.Controls.Add(btnStreamDemo);
+            sidePanel.Controls.Add(grpTextOps);
+        }
+
+        private void CreateRangeOperationsGroup()
+        {
+            grpRangeOps = new GroupBox
+            {
+                Text = "🎯 Range Operations",
+                ForeColor = System.Drawing.Color.White,
+                Location = new System.Drawing.Point(10, 485),
+                Size = new System.Drawing.Size(260, 190),
+                FlatStyle = FlatStyle.Flat
+            };
+
+            btnGetRange = CreateStyledButton("📋 Get Range Text", 25);
+            btnGetRange.Click += BtnGetRange_Click;
+
+            btnReplaceRange = CreateStyledButton("🔄 Replace Range", 60);
+            btnReplaceRange.Click += BtnReplaceRange_Click;
+
+            btnDeleteRange = CreateStyledButton("🗑️ Delete Range", 95);
+            btnDeleteRange.Click += BtnDeleteRange_Click;
+
+            btnSelectRange = CreateStyledButton("🔍 Select Range", 130);
+            btnSelectRange.Click += BtnSelectRange_Click;
+
+            grpRangeOps.Controls.Add(btnGetRange);
+            grpRangeOps.Controls.Add(btnReplaceRange);
+            grpRangeOps.Controls.Add(btnDeleteRange);
+            grpRangeOps.Controls.Add(btnSelectRange);
+            sidePanel.Controls.Add(grpRangeOps);
+        }
+
+        private Button CreateStyledButton(string text, int yPosition)
         {
             var button = new Button
             {
                 Text = text,
                 Left = 10,
                 Top = yPosition,
-                Width = 180,
-                Height = 30
+                Width = 240,
+                Height = 30,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = System.Drawing.Color.FromArgb(0, 122, 204),
+                ForeColor = System.Drawing.Color.White,
+                Cursor = Cursors.Hand,
+                TextAlign = System.Drawing.ContentAlignment.MiddleLeft,
+                Padding = new Padding(5, 0, 0, 0)
             };
-            buttonPanel.Controls.Add(button);
+
+            button.FlatAppearance.BorderSize = 0;
+            button.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(28, 151, 234);
+            button.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(0, 102, 184);
+
             return button;
         }
 
         private void DisableButtons()
         {
-            foreach (Control control in buttonPanel.Controls)
+            foreach (Control group in sidePanel.Controls)
             {
-                if (control is Button btn)
-                    btn.Enabled = false;
+                if (group is GroupBox grp)
+                {
+                    foreach (Control control in grp.Controls)
+                    {
+                        if (control is Button btn)
+                            btn.Enabled = false;
+                    }
+                }
             }
         }
 
         private void EnableButtons()
         {
-            foreach (Control control in buttonPanel.Controls)
+            foreach (Control group in sidePanel.Controls)
             {
-                if (control is Button btn)
-                    btn.Enabled = true;
+                if (group is GroupBox grp)
+                {
+                    foreach (Control control in grp.Controls)
+                    {
+                        if (control is Button btn)
+                            btn.Enabled = true;
+                    }
+                }
             }
         }
 
@@ -331,8 +440,11 @@ namespace Example
             try
             {
                 (int line, int column) = await editorService.GetPositionAsync();
-                lblStatus.Text = $"Cursor at Line {line}, Column {column}";
+                lblStatus.Text = $"Cursor position retrieved";
+                lblEditorInfo.Text = $"Line: {line} | Col: {column}";
                 txtLineNumber.Text = line.ToString();
+                MessageBox.Show($"Cursor Position:\n\nLine: {line}\nColumn: {column}",
+                    "Cursor Position", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
