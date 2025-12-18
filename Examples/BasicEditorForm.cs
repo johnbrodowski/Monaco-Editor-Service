@@ -303,7 +303,7 @@ namespace Example
         {
             try
             {
-                var (line, column) = await editorService.GetPositionAsync();
+                (int line, int column) = await editorService.GetPositionAsync();
                 lblStatus.Text = $"Cursor at Line {line}, Column {column}";
                 txtLineNumber.Text = line.ToString();
             }
@@ -317,7 +317,7 @@ namespace Example
         {
             try
             {
-                var (line, column) = await editorService.GetPositionAsync();
+                (int line, int column) = await editorService.GetPositionAsync();
                 await editorService.InsertTextAsync(line, column, "// TODO: Add implementation here\n");
                 lblStatus.Text = "Inserted comment at cursor position";
             }
