@@ -1,4 +1,4 @@
-using MonacoEditorService;
+using MonacoEditor;
 using Microsoft.Web.WebView2.WinForms;
 using System;
 using System.IO;
