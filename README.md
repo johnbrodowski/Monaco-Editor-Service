@@ -1,3 +1,6 @@
+# About this code
+This example was extracted from AGPA — my fully autonomous general-purpose agent (closed-source, ~150k LOC).
+
 <img width="1366" height="730" alt="image" src="https://github.com/user-attachments/assets/5876482d-7a13-42ae-8d49-4b9a33633772" />
 
 
